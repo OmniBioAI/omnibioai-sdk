@@ -57,4 +57,7 @@ htmlcov/
 # -------------------------------------------------
 .env
 .env.local
-
+launcher/node_modules
+omnibioai_sdk/__pycache__
+omnibioai_sdk/__pycache__/__init__.cpython-313.pc
+omnibioai_sdk/__pycache__/client.cpython-313.pyc
