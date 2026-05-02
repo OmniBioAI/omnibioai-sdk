@@ -493,18 +493,354 @@ function ObjectSelector({ onSelect }) {
   );
 }
 
+// ── ObjectDetail ──────────────────────────────────────────────────────
+// Shown between the list and the launcher.
+// Displays: full metadata, lineage (parent + siblings/children), log tail, launch buttons.
+
+const SKIPPED_META_KEYS = new Set([
+  'log_tail', 'celery_id', 'citations', 'structured',
+]);
+
+function MetaTable({ metadata }) {
+  if (!metadata || !Object.keys(metadata).length) return null;
+  const entries = Object.entries(metadata).filter(([k]) => !SKIPPED_META_KEYS.has(k));
+  if (!entries.length) return null;
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <tbody>
+        {entries.map(([k, v]) => (
+          <tr key={k} style={{ borderBottom: '1px solid #f1f3f4' }}>
+            <td style={{
+              padding: '6px 12px 6px 0', color: '#5f6368', fontWeight: 500,
+              whiteSpace: 'nowrap', width: '30%', verticalAlign: 'top',
+            }}>{k}</td>
+            <td style={{
+              padding: '6px 0', color: '#202124', wordBreak: 'break-word',
+              fontFamily: typeof v === 'string' && v.length > 40 ? 'monospace' : 'inherit',
+              fontSize: typeof v === 'string' && v.length > 40 ? 11 : 13,
+            }}>
+              {typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function LogTail({ logs }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!logs || !logs.length) return null;
+  const visible = expanded ? logs : logs.slice(-8);
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{
+        background: '#1e1e2e', borderRadius: 8, padding: '12px 14px',
+        fontFamily: 'monospace', fontSize: 11, color: '#cdd6f4',
+        maxHeight: expanded ? 400 : 180, overflowY: 'auto',
+        lineHeight: 1.6,
+      }}>
+        {!expanded && logs.length > 8 && (
+          <div style={{ color: '#6c7086', marginBottom: 6 }}>
+            … {logs.length - 8} earlier lines hidden
+          </div>
+        )}
+        {visible.map((line, i) => {
+          const color = line.startsWith('[ERROR]') ? '#f38ba8'
+            : line.startsWith('[WARN]') ? '#fab387'
+            : line.startsWith('[OK]') || line.startsWith('[DONE]') ? '#a6e3a1'
+            : line.startsWith('[INFO]') ? '#89dceb'
+            : '#cdd6f4';
+          return (
+            <div key={i} style={{ color, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              {line || '\u00a0'}
+            </div>
+          );
+        })}
+      </div>
+      <button
+        onClick={() => setExpanded((e) => !e)}
+        style={{
+          marginTop: 6, background: 'none', border: 'none',
+          fontSize: 12, color: '#1a73e8', cursor: 'pointer', padding: 0,
+        }}
+      >
+        {expanded ? '▲ Show less' : '▼ Show full log'}
+      </button>
+    </div>
+  );
+}
+
+function LineageRow({ obj, isCurrent, onSelect }) {
+  const [hovered, setHovered] = useState(false);
+  const status = obj.metadata?.status;
+  return (
+    <div
+      onClick={() => !isCurrent && onSelect(obj)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 12px', borderRadius: 8,
+        border: isCurrent ? '1px solid #1a73e8' : hovered ? '1px solid #dadce0' : '1px solid transparent',
+        background: isCurrent ? '#f0f6ff' : hovered ? '#f8f9fa' : 'transparent',
+        cursor: isCurrent ? 'default' : 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, fontWeight: isCurrent ? 600 : 400, color: '#202124' }}>
+            {obj.name || obj.object_type}
+          </span>
+          <span style={typeBadge(obj.object_type)}>{obj.object_type}</span>
+          {status && (
+            <span style={{ fontSize: 11, color: STATUS_COLOR[status] || '#5f6368', fontWeight: 500 }}>
+              ● {status}
+            </span>
+          )}
+          {isCurrent && (
+            <span style={{ fontSize: 11, color: '#1a73e8', fontWeight: 600 }}>← current</span>
+          )}
+        </div>
+        <div style={{ fontSize: 10, color: '#9aa0a6', fontFamily: 'monospace', marginTop: 1 }}>
+          {obj.object_id}
+        </div>
+      </div>
+      {!isCurrent && (
+        <span style={{ fontSize: 12, color: hovered ? '#1a73e8' : '#9aa0a6' }}>Open →</span>
+      )}
+    </div>
+  );
+}
+
+function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
+  const [relatives, setRelatives] = useState([]);  // parent + siblings + children
+  const [loadingRel, setLoadingRel] = useState(true);
+
+  const meta = obj.metadata || {};
+  const hasLogs = Array.isArray(meta.log_tail) && meta.log_tail.length > 0;
+  const progress = meta.progress;
+
+  // Fetch related objects: parent (if any) + children (objects whose parent_id = objectId)
+  useEffect(() => {
+    if (USE_MOCK) { setLoadingRel(false); return; }
+
+    const fetches = [];
+
+    // Fetch children
+    fetches.push(
+      fetch(`${BASE_URL}/api/dev/objects/?parent_id=${objectId}&page_size=50`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      })
+        .then((r) => r.json())
+        .then((d) => (Array.isArray(d.objects) ? d.objects : []))
+        .catch(() => [])
+    );
+
+    // Fetch siblings (objects with same parent_id)
+    if (obj.parent_id) {
+      fetches.push(
+        fetch(`${BASE_URL}/api/dev/objects/?parent_id=${obj.parent_id}&page_size=50`, {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+        })
+          .then((r) => r.json())
+          .then((d) => (Array.isArray(d.objects) ? d.objects : []))
+          .catch(() => [])
+      );
+
+      // Fetch parent object
+      fetches.push(
+        fetch(`${BASE_URL}/api/dev/objects/${obj.parent_id}/`, {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+        })
+          .then((r) => r.json())
+          .catch(() => null)
+      );
+    }
+
+    Promise.all(fetches).then(([children, siblings, parent]) => {
+      const seen = new Set([objectId]);
+      const list = [];
+
+      if (parent) { seen.add(parent.object_id); list.push({ ...parent, _rel: 'parent' }); }
+
+      (siblings || []).forEach((s) => {
+        if (!seen.has(s.object_id)) { seen.add(s.object_id); list.push({ ...s, _rel: 'sibling' }); }
+      });
+
+      (children || []).forEach((c) => {
+        if (!seen.has(c.object_id)) { seen.add(c.object_id); list.push({ ...c, _rel: 'child' }); }
+      });
+
+      setRelatives(list);
+      setLoadingRel(false);
+    });
+  }, [objectId, obj.parent_id]);
+
+  const section = (title, children) => (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 600, color: '#9aa0a6', letterSpacing: '0.8px',
+        textTransform: 'uppercase', marginBottom: 10,
+      }}>{title}</div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 16px 80px' }}>
+      {/* Header */}
+      <header style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 0', borderBottom: '1px solid #e8eaed', marginBottom: 24,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none', border: '1px solid #dadce0', borderRadius: 6,
+              padding: '4px 10px', fontSize: 12, color: '#5f6368', cursor: 'pointer',
+            }}
+          >
+            ← Back
+          </button>
+          <span style={{ fontWeight: 700, fontSize: 18, color: '#1a73e8' }}>OmniBioAI</span>
+        </div>
+        <span style={typeBadge(obj.object_type)}>{obj.object_type}</span>
+      </header>
+
+      {/* Title + ID */}
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#202124' }}>
+          {obj.name || obj.object_type}
+        </h2>
+        <div style={{ fontSize: 12, color: '#9aa0a6', fontFamily: 'monospace', marginTop: 4 }}>
+          {objectId}
+        </div>
+        {obj.created_by && (
+          <div style={{ fontSize: 12, color: '#5f6368', marginTop: 4 }}>
+            Created by <strong>{obj.created_by}</strong>
+          </div>
+        )}
+
+        {/* Progress bar for jobs */}
+        {progress !== undefined && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#5f6368', marginBottom: 4 }}>
+              <span>Progress</span><span>{progress}%</span>
+            </div>
+            <div style={{ height: 6, background: '#e8eaed', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 3,
+                width: `${progress}%`,
+                background: progress === 100 ? '#2e7d32' : '#1a73e8',
+                transition: 'width 0.3s',
+              }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Metadata */}
+      {section('Metadata', <MetaTable metadata={meta} />)}
+
+      {/* Inputs */}
+      {obj.inputs && obj.inputs.length > 0 && section('Inputs',
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {obj.inputs.map((inp) => (
+            <div key={inp} style={{
+              fontSize: 12, fontFamily: 'monospace', color: '#1a73e8',
+              padding: '4px 8px', background: '#f0f6ff', borderRadius: 4,
+              cursor: 'pointer',
+            }}
+              onClick={() => onLaunch(inp)}
+            >
+              {inp}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Log tail */}
+      {hasLogs && section('Job Log', <LogTail logs={meta.log_tail} />)}
+
+      {/* Lineage */}
+      {section('Lineage',
+        loadingRel
+          ? <div style={{ fontSize: 13, color: '#9aa0a6' }}>Loading related objects…</div>
+          : relatives.length === 0
+            ? <div style={{ fontSize: 13, color: '#9aa0a6' }}>No related objects found.</div>
+            : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Current object always shown at top */}
+                <LineageRow obj={{ ...obj, object_id: objectId }} isCurrent onSelect={() => {}} />
+                {/* Dividers by relationship type */}
+                {['parent', 'sibling', 'child'].map((rel) => {
+                  const items = relatives.filter((r) => r._rel === rel);
+                  if (!items.length) return null;
+                  return (
+                    <div key={rel}>
+                      <div style={{
+                        fontSize: 10, color: '#bdc1c6', textTransform: 'uppercase',
+                        letterSpacing: '0.6px', padding: '8px 12px 4px',
+                      }}>
+                        {rel === 'parent' ? '↑ Parent' : rel === 'child' ? '↓ Children' : '↔ Siblings'}
+                      </div>
+                      {items.map((r) => (
+                        <LineageRow
+                          key={r.object_id}
+                          obj={r}
+                          isCurrent={false}
+                          onSelect={(o) => onLaunch(o.object_id)}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+      )}
+
+      {/* Launch button */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)',
+        borderTop: '1px solid #e8eaed', padding: '12px 24px',
+        display: 'flex', justifyContent: 'center',
+      }}>
+        <button
+          onClick={() => onLaunch(objectId)}
+          style={{
+            background: '#1a73e8', color: '#fff', border: 'none',
+            borderRadius: 8, padding: '10px 48px', fontSize: 14,
+            fontWeight: 600, cursor: 'pointer', maxWidth: 400, width: '100%',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#1557b0'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#1a73e8'; }}
+        >
+          Open in Environment →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────
 function App() {
   const params = new URLSearchParams(window.location.search);
   const urlObjectId = params.get('object_id');
 
+  // view: 'list' | 'detail' | 'launcher'
+  const [view, setView]                     = useState(urlObjectId ? 'launcher' : 'list');
   const [selectedObject, setSelectedObject] = useState(null);
-  const [obj, setObj] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
-  const [selected, setSelected] = useState('notebook');
-  const [toast, setToast] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [obj, setObj]                       = useState(null);
+  const [loading, setLoading]               = useState(false);
+  const [fetchError, setFetchError]         = useState(null);
+  const [selected, setSelected]             = useState('notebook');
+  const [toast, setToast]                   = useState(null);
+  const [modal, setModal]                   = useState(null);
 
   const objectId = urlObjectId || selectedObject?.object_id || null;
 
@@ -528,6 +864,22 @@ function App() {
   }, [objectId, selectedObject]);
 
   const showToast = (msg) => { setToast(null); setTimeout(() => setToast(msg), 10); };
+
+  // Navigate to detail view for any object ID (used by lineage links)
+  const openObject = useCallback((id) => {
+    setLoading(true);
+    fetch(`${BASE_URL}/api/dev/objects/${id}/`, {
+      headers: { Authorization: `Bearer ${TOKEN}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setSelectedObject(data);
+        setObj(data);
+        setLoading(false);
+        setView('detail');
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const notebookUrl = `${JUPYTER_BASE}/lab?token=${JUPYTER_TOKEN}&omnibioai_object_id=${objectId}`;
 
@@ -566,17 +918,12 @@ function App() {
 
   const handleAction = (type) => {
     if (type === 'notebook') {
-      // Open JupyterLab with object ID in the URL
       window.open(notebookUrl, '_blank');
-
     } else if (type === 'python') {
-      // Copy env vars to clipboard — paste in any terminal
       navigator.clipboard.writeText(pythonSnippet)
         .then(() => showToast('Env vars copied — paste in your terminal'))
         .catch(() => showToast('Copy failed — check browser clipboard permissions'));
-
     } else if (type === 'r') {
-      // Download R script, then ask Django to open RStudio server-side
       downloadRScript();
       fetch(`${BASE_URL}/api/dev/launch/rstudio/`, {
         method: 'POST',
@@ -585,33 +932,54 @@ function App() {
       })
         .then((r) => r.json())
         .then((data) => {
-          if (data.ok) {
-            showToast('RStudio launched with R script');
-          } else {
-            showToast('R script downloaded — open it manually in RStudio');
-          }
+          showToast(data.ok ? 'RStudio launched with R script' : 'R script downloaded — open manually in RStudio');
         })
-        .catch(() => showToast('R script downloaded — open it manually in RStudio'));
+        .catch(() => showToast('R script downloaded — open manually in RStudio'));
     }
   };
 
   const handleCardClick = (type) => { setSelected(type); handleAction(type); };
 
-  if (!objectId) {
+  // ── List view ──────────────────────────────────────────────────────
+  if (view === 'list') {
     return (
       <div className="app">
-        <ObjectSelector onSelect={(o) => setSelectedObject(o)} />
+        <ObjectSelector onSelect={(o) => {
+          setSelectedObject(o);
+          setObj(o);
+          setView('detail');
+        }} />
+        {toast && <Toast key={toast + Date.now()} message={toast} />}
       </div>
     );
   }
 
+  // ── Detail view ────────────────────────────────────────────────────
+  if (view === 'detail' && obj) {
+    return (
+      <div className="app">
+        <ObjectDetail
+          obj={obj}
+          objectId={objectId}
+          onBack={() => { if (!urlObjectId) setView('list'); }}
+          onLaunch={(id) => {
+            if (id === objectId) { setView('launcher'); }
+            else { openObject(id); }
+          }}
+        />
+        {toast && <Toast key={toast + Date.now()} message={toast} />}
+      </div>
+    );
+  }
+
+  // ── Launcher view ──────────────────────────────────────────────────
   return (
     <div className="app">
       <header className="header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {!urlObjectId && (
             <button
-              onClick={() => { setSelectedObject(null); setObj(null); setFetchError(null); }}
+              onClick={() => setView('detail')}
               style={{
                 background: 'none', border: '1px solid #dadce0', borderRadius: 6,
                 padding: '4px 10px', fontSize: 12, color: '#5f6368', cursor: 'pointer',
