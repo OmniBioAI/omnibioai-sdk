@@ -55,11 +55,11 @@ const MOCK_REGISTRY = {
 
 // ── Styling helpers ───────────────────────────────────────────────────
 const TYPE_COLORS = {
-  LiteratureStudy:   { bg: '#e8f4fd', text: '#1a6fa8', border: '#b3d7f0' },
-  LiteratureJob:     { bg: '#fff3e0', text: '#a05a00', border: '#ffcc80' },
-  LiteratureSummary: { bg: '#e8f5e9', text: '#2e7d32', border: '#a5d6a7' },
-  RNASeqObject:      { bg: '#f3e5f5', text: '#7b1fa2', border: '#ce93d8' },
-  default:           { bg: '#f1f3f4', text: '#3c4043', border: '#dadce0' },
+  LiteratureStudy:   { bg: '#0d2137', text: '#0094ff', border: '#1a3a5c' },
+  LiteratureJob:     { bg: '#2a1800', text: '#f59e0b', border: '#4a2e00' },
+  LiteratureSummary: { bg: '#0a2a1a', text: '#00e5a0', border: '#1a4a2a' },
+  RNASeqObject:      { bg: '#1f0a2a', text: '#a855f7', border: '#3d1a52' },
+  default:           { bg: '#1a1d2e', text: '#6b7280', border: '#2a2d3e' },
 };
 
 function typeBadge(objectType) {
@@ -72,7 +72,7 @@ function typeBadge(objectType) {
   };
 }
 
-const STATUS_COLOR = { done: '#2e7d32', created: '#a05a00', running: '#1a73e8', failed: '#c62828' };
+const STATUS_COLOR = { done: '#00e5a0', created: '#f59e0b', running: '#0094ff', failed: '#ef4444' };
 
 function shouldUseMock(id) { return USE_MOCK || id === 'test'; }
 
@@ -168,10 +168,10 @@ function ObjectRow({ obj, onSelect, isChild }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: isChild ? '10px 16px 10px 32px' : '12px 16px',
         borderRadius: 10, cursor: 'pointer',
-        border: hovered ? '1px solid #1a73e8' : '1px solid #e8eaed',
-        background: hovered ? '#f0f6ff' : isChild ? '#fafbfc' : '#fff',
+        border: hovered ? '1px solid #0094ff' : '1px solid #2a2d3e',
+        background: hovered ? '#0d1e2e' : isChild ? '#131620' : '#1a1d2e',
         transition: 'border-color 0.15s, background 0.15s',
-        boxShadow: hovered ? '0 1px 6px rgba(26,115,232,0.12)' : 'none',
+        boxShadow: hovered ? '0 1px 6px rgba(0,148,255,0.12)' : 'none',
         marginLeft: isChild ? 16 : 0,
         position: 'relative',
       }}
@@ -180,33 +180,33 @@ function ObjectRow({ obj, onSelect, isChild }) {
         <div style={{
           position: 'absolute', left: 12, top: '50%',
           transform: 'translateY(-50%)',
-          width: 10, height: 1, background: '#dadce0',
+          width: 10, height: 1, background: '#2a2d3e',
         }} />
       )}
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 3 }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: '#202124' }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: '#ffffff' }}>
             {obj.name || obj.object_type}
           </span>
           <span style={typeBadge(obj.object_type)}>{obj.object_type}</span>
           {status && (
-            <span style={{ fontSize: 11, fontWeight: 500, color: STATUS_COLOR[status] || '#5f6368' }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: STATUS_COLOR[status] || '#6b7280' }}>
               ● {status}
             </span>
           )}
         </div>
-        <div style={{ fontSize: 11, color: '#9aa0a6', fontFamily: 'monospace', marginBottom: metaPreview ? 2 : 0 }}>
+        <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace', marginBottom: metaPreview ? 2 : 0 }}>
           {obj.object_id}
         </div>
         {metaPreview && (
-          <div style={{ fontSize: 12, color: '#5f6368' }}>{metaPreview}</div>
+          <div style={{ fontSize: 12, color: '#6b7280' }}>{metaPreview}</div>
         )}
       </div>
 
       <div style={{
         marginLeft: 12, fontSize: 13, whiteSpace: 'nowrap', transition: 'color 0.15s',
-        color: hovered ? '#1a73e8' : '#9aa0a6', fontWeight: hovered ? 600 : 400,
+        color: hovered ? '#00e5a0' : '#6b7280', fontWeight: hovered ? 600 : 400,
       }}>
         Open →
       </div>
@@ -234,7 +234,7 @@ function GroupSection({ group, onSelect, groupMode, page, onLoadMore }) {
           }}
         >
           <span style={{
-            fontSize: 10, color: '#9aa0a6', display: 'inline-block',
+            fontSize: 10, color: '#6b7280', display: 'inline-block',
             transition: 'transform 0.15s',
             transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
           }}>▾</span>
@@ -242,14 +242,14 @@ function GroupSection({ group, onSelect, groupMode, page, onLoadMore }) {
           {isStudyGroup ? (
             <>
               <span style={typeBadge(parentObj.object_type)}>{parentObj.object_type}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#3c4043' }}>{label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>{label}</span>
             </>
           ) : (
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#3c4043' }}>{label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>{label}</span>
           )}
 
           <span style={{
-            fontSize: 11, color: '#9aa0a6', background: '#f1f3f4',
+            fontSize: 11, color: '#6b7280', background: '#2a2d3e',
             borderRadius: 10, padding: '1px 7px',
           }}>
             {objects.length}
@@ -271,17 +271,17 @@ function GroupSection({ group, onSelect, groupMode, page, onLoadMore }) {
           {remaining > 0 && (
             <button
               onClick={(e) => { e.stopPropagation(); onLoadMore(); }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#1a73e8'; e.currentTarget.style.color = '#1a73e8'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#dadce0'; e.currentTarget.style.color = '#5f6368'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#00e5a0'; e.currentTarget.style.color = '#00e5a0'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2a2d3e'; e.currentTarget.style.color = '#6b7280'; }}
               style={{
                 marginTop: 2, padding: '9px 0', background: 'none',
-                border: '1px dashed #dadce0', borderRadius: 8,
-                fontSize: 13, color: '#5f6368', cursor: 'pointer', width: '100%',
+                border: '1px dashed #2a2d3e', borderRadius: 8,
+                fontSize: 13, color: '#6b7280', cursor: 'pointer', width: '100%',
                 transition: 'border-color 0.15s, color 0.15s',
               }}
             >
               Load {Math.min(PAGE_SIZE, remaining)} more
-              <span style={{ color: '#bdc1c6', marginLeft: 6, fontSize: 12 }}>
+              <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>
                 ({remaining} remaining)
               </span>
             </button>
@@ -372,20 +372,20 @@ function ObjectSelector({ onSelect }) {
     <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 16px 60px' }}>
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 0', borderBottom: '1px solid #e8eaed', marginBottom: 20,
+        padding: '20px 0', borderBottom: '1px solid #2a2d3e', marginBottom: 20,
       }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 20, color: '#1a73e8', letterSpacing: '-0.3px' }}>
+          <div style={{ fontWeight: 700, fontSize: 20, color: '#ffffff', letterSpacing: '-0.3px' }}>
             OmniBioAI SDK
           </div>
-          <div style={{ fontSize: 12, color: '#80868b', marginTop: 2 }}>Analysis Launcher</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Analysis Launcher</div>
         </div>
-        <div style={{ fontSize: 12, color: '#80868b', textAlign: 'right' }}>
+        <div style={{ fontSize: 12, color: '#6b7280', textAlign: 'right' }}>
           {serverTotal !== null
             ? <div>{serverTotal} objects in registry</div>
             : <div>{allObjects.length} loaded</div>}
           {totalShown < allObjects.length && (
-            <div style={{ marginTop: 2, color: '#bdc1c6' }}>showing {totalShown} of {allObjects.length}</div>
+            <div style={{ marginTop: 2, color: '#6b7280' }}>showing {totalShown} of {allObjects.length}</div>
           )}
         </div>
       </header>
@@ -398,8 +398,8 @@ function ObjectSelector({ onSelect }) {
           onChange={(e) => setSearchInput(e.target.value)}
           style={{
             flex: 1, minWidth: 180, height: 36, padding: '0 12px', borderRadius: 8,
-            border: '1px solid #dadce0', fontSize: 13, color: '#3c4043',
-            outline: 'none', background: '#fff',
+            border: '1px solid #2a2d3e', fontSize: 13, color: '#ffffff',
+            outline: 'none', background: '#1a1d2e',
           }}
         />
         <select
@@ -407,8 +407,8 @@ function ObjectSelector({ onSelect }) {
           onChange={(e) => setTypeFilter(e.target.value)}
           style={{
             height: 36, padding: '0 10px', borderRadius: 8,
-            border: '1px solid #dadce0', fontSize: 13, color: '#3c4043',
-            background: '#fff', cursor: 'pointer', minWidth: 140,
+            border: '1px solid #2a2d3e', fontSize: 13, color: '#ffffff',
+            background: '#1a1d2e', cursor: 'pointer', minWidth: 140,
           }}
         >
           {types.map((t) => (
@@ -416,7 +416,7 @@ function ObjectSelector({ onSelect }) {
           ))}
         </select>
 
-        <div style={{ display: 'flex', border: '1px solid #dadce0', borderRadius: 8, overflow: 'hidden', height: 36 }}>
+        <div style={{ display: 'flex', border: '1px solid #2a2d3e', borderRadius: 8, overflow: 'hidden', height: 36 }}>
           {[
             { key: 'study', label: 'By study' },
             { key: 'type',  label: 'By type'  },
@@ -427,11 +427,11 @@ function ObjectSelector({ onSelect }) {
               onClick={() => setGroupMode(key)}
               style={{
                 padding: '0 12px', border: 'none',
-                borderRight: i < arr.length - 1 ? '1px solid #dadce0' : 'none',
+                borderRight: i < arr.length - 1 ? '1px solid #2a2d3e' : 'none',
                 cursor: 'pointer', fontSize: 12,
                 fontWeight: groupMode === key ? 600 : 400,
-                background: groupMode === key ? '#e8f0fe' : '#fff',
-                color: groupMode === key ? '#1a73e8' : '#5f6368',
+                background: groupMode === key ? '#2a2d3e' : '#1a1d2e',
+                color: groupMode === key ? '#00e5a0' : '#6b7280',
                 transition: 'background 0.15s, color 0.15s',
               }}
             >
@@ -442,15 +442,15 @@ function ObjectSelector({ onSelect }) {
       </div>
 
       {loading && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: '#9aa0a6', fontSize: 14 }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: '#6b7280', fontSize: 14 }}>
           Loading objects…
         </div>
       )}
 
       {!loading && allObjects.length === 0 && (
         <div style={{
-          textAlign: 'center', padding: '48px 0', color: '#9aa0a6', fontSize: 14,
-          background: '#f8f9fa', borderRadius: 12, border: '1px dashed #dadce0',
+          textAlign: 'center', padding: '48px 0', color: '#6b7280', fontSize: 14,
+          background: '#1a1d2e', borderRadius: 12, border: '1px dashed #2a2d3e',
         }}>
           No objects match your search.
         </div>
@@ -471,19 +471,19 @@ function ObjectSelector({ onSelect }) {
         <button
           onClick={handleLoadMoreFromServer}
           disabled={loadingMore}
-          onMouseEnter={(e) => { if (!loadingMore) { e.currentTarget.style.borderColor = '#1a73e8'; e.currentTarget.style.color = '#1a73e8'; }}}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#dadce0'; e.currentTarget.style.color = '#5f6368'; }}
+          onMouseEnter={(e) => { if (!loadingMore) { e.currentTarget.style.borderColor = '#00e5a0'; e.currentTarget.style.color = '#00e5a0'; }}}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2a2d3e'; e.currentTarget.style.color = '#6b7280'; }}
           style={{
             marginTop: 16, padding: '11px 0', background: 'none',
-            border: '1px dashed #dadce0', borderRadius: 8,
-            fontSize: 13, color: '#5f6368', cursor: loadingMore ? 'default' : 'pointer',
+            border: '1px dashed #2a2d3e', borderRadius: 8,
+            fontSize: 13, color: '#6b7280', cursor: loadingMore ? 'default' : 'pointer',
             width: '100%', transition: 'border-color 0.15s, color 0.15s',
             opacity: loadingMore ? 0.6 : 1,
           }}
         >
           {loadingMore ? 'Loading…' : `Load next ${PAGE_SIZE} objects`}
           {!loadingMore && serverTotal !== null && (
-            <span style={{ color: '#bdc1c6', marginLeft: 6, fontSize: 12 }}>
+            <span style={{ color: '#6b7280', marginLeft: 6, fontSize: 12 }}>
               ({serverTotal - allObjects.length} remaining on server)
             </span>
           )}
@@ -509,13 +509,13 @@ function MetaTable({ metadata }) {
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
       <tbody>
         {entries.map(([k, v]) => (
-          <tr key={k} style={{ borderBottom: '1px solid #f1f3f4' }}>
+          <tr key={k} style={{ borderBottom: '1px solid #2a2d3e' }}>
             <td style={{
-              padding: '6px 12px 6px 0', color: '#5f6368', fontWeight: 500,
+              padding: '6px 12px 6px 0', color: '#6b7280', fontWeight: 500,
               whiteSpace: 'nowrap', width: '30%', verticalAlign: 'top',
             }}>{k}</td>
             <td style={{
-              padding: '6px 0', color: '#202124', wordBreak: 'break-word',
+              padding: '6px 0', color: '#ffffff', wordBreak: 'break-word',
               fontFamily: typeof v === 'string' && v.length > 40 ? 'monospace' : 'inherit',
               fontSize: typeof v === 'string' && v.length > 40 ? 11 : 13,
             }}>
@@ -553,7 +553,7 @@ function LogTail({ logs }) {
             : '#cdd6f4';
           return (
             <div key={i} style={{ color, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-              {line || '\u00a0'}
+              {line || ' '}
             </div>
           );
         })}
@@ -562,7 +562,7 @@ function LogTail({ logs }) {
         onClick={() => setExpanded((e) => !e)}
         style={{
           marginTop: 6, background: 'none', border: 'none',
-          fontSize: 12, color: '#1a73e8', cursor: 'pointer', padding: 0,
+          fontSize: 12, color: '#0094ff', cursor: 'pointer', padding: 0,
         }}
       >
         {expanded ? '▲ Show less' : '▼ Show full log'}
@@ -582,33 +582,33 @@ function LineageRow({ obj, isCurrent, onSelect }) {
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '8px 12px', borderRadius: 8,
-        border: isCurrent ? '1px solid #1a73e8' : hovered ? '1px solid #dadce0' : '1px solid transparent',
-        background: isCurrent ? '#f0f6ff' : hovered ? '#f8f9fa' : 'transparent',
+        border: isCurrent ? '1px solid #0094ff' : hovered ? '1px solid #2a2d3e' : '1px solid transparent',
+        background: isCurrent ? '#0d1e2e' : hovered ? '#1a1d2e' : 'transparent',
         cursor: isCurrent ? 'default' : 'pointer',
         transition: 'all 0.15s',
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, fontWeight: isCurrent ? 600 : 400, color: '#202124' }}>
+          <span style={{ fontSize: 13, fontWeight: isCurrent ? 600 : 400, color: '#ffffff' }}>
             {obj.name || obj.object_type}
           </span>
           <span style={typeBadge(obj.object_type)}>{obj.object_type}</span>
           {status && (
-            <span style={{ fontSize: 11, color: STATUS_COLOR[status] || '#5f6368', fontWeight: 500 }}>
+            <span style={{ fontSize: 11, color: STATUS_COLOR[status] || '#6b7280', fontWeight: 500 }}>
               ● {status}
             </span>
           )}
           {isCurrent && (
-            <span style={{ fontSize: 11, color: '#1a73e8', fontWeight: 600 }}>← current</span>
+            <span style={{ fontSize: 11, color: '#00e5a0', fontWeight: 600 }}>← current</span>
           )}
         </div>
-        <div style={{ fontSize: 10, color: '#9aa0a6', fontFamily: 'monospace', marginTop: 1 }}>
+        <div style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace', marginTop: 1 }}>
           {obj.object_id}
         </div>
       </div>
       {!isCurrent && (
-        <span style={{ fontSize: 12, color: hovered ? '#1a73e8' : '#9aa0a6' }}>Open →</span>
+        <span style={{ fontSize: 12, color: hovered ? '#00e5a0' : '#6b7280' }}>Open →</span>
       )}
     </div>
   );
@@ -681,7 +681,7 @@ function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
   const section = (title, children) => (
     <div style={{ marginBottom: 24 }}>
       <div style={{
-        fontSize: 11, fontWeight: 600, color: '#9aa0a6', letterSpacing: '0.8px',
+        fontSize: 11, fontWeight: 600, color: '#6b7280', letterSpacing: '0.8px',
         textTransform: 'uppercase', marginBottom: 10,
       }}>{title}</div>
       {children}
@@ -693,48 +693,48 @@ function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
       {/* Header */}
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 0', borderBottom: '1px solid #e8eaed', marginBottom: 24,
+        padding: '20px 0', borderBottom: '1px solid #2a2d3e', marginBottom: 24,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             onClick={onBack}
             style={{
-              background: 'none', border: '1px solid #dadce0', borderRadius: 6,
-              padding: '4px 10px', fontSize: 12, color: '#5f6368', cursor: 'pointer',
+              background: 'none', border: '1px solid #2a2d3e', borderRadius: 6,
+              padding: '4px 10px', fontSize: 12, color: '#6b7280', cursor: 'pointer',
             }}
           >
             ← Back
           </button>
-          <span style={{ fontWeight: 700, fontSize: 18, color: '#1a73e8' }}>OmniBioAI</span>
+          <span style={{ fontWeight: 700, fontSize: 18, color: '#00e5a0' }}>OmniBioAI</span>
         </div>
         <span style={typeBadge(obj.object_type)}>{obj.object_type}</span>
       </header>
 
       {/* Title + ID */}
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#202124' }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#ffffff' }}>
           {obj.name || obj.object_type}
         </h2>
-        <div style={{ fontSize: 12, color: '#9aa0a6', fontFamily: 'monospace', marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: '#6b7280', fontFamily: 'monospace', marginTop: 4 }}>
           {objectId}
         </div>
         {obj.created_by && (
-          <div style={{ fontSize: 12, color: '#5f6368', marginTop: 4 }}>
-            Created by <strong>{obj.created_by}</strong>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+            Created by <strong style={{ color: '#ffffff' }}>{obj.created_by}</strong>
           </div>
         )}
 
         {/* Progress bar for jobs */}
         {progress !== undefined && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#5f6368', marginBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
               <span>Progress</span><span>{progress}%</span>
             </div>
-            <div style={{ height: 6, background: '#e8eaed', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: 6, background: '#2a2d3e', borderRadius: 3, overflow: 'hidden' }}>
               <div style={{
                 height: '100%', borderRadius: 3,
                 width: `${progress}%`,
-                background: progress === 100 ? '#2e7d32' : '#1a73e8',
+                background: progress === 100 ? '#00e5a0' : '#0094ff',
                 transition: 'width 0.3s',
               }} />
             </div>
@@ -750,8 +750,8 @@ function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {obj.inputs.map((inp) => (
             <div key={inp} style={{
-              fontSize: 12, fontFamily: 'monospace', color: '#1a73e8',
-              padding: '4px 8px', background: '#f0f6ff', borderRadius: 4,
+              fontSize: 12, fontFamily: 'monospace', color: '#0094ff',
+              padding: '4px 8px', background: '#0d1e2e', borderRadius: 4,
               cursor: 'pointer',
             }}
               onClick={() => onLaunch(inp)}
@@ -768,9 +768,9 @@ function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
       {/* Lineage */}
       {section('Lineage',
         loadingRel
-          ? <div style={{ fontSize: 13, color: '#9aa0a6' }}>Loading related objects…</div>
+          ? <div style={{ fontSize: 13, color: '#6b7280' }}>Loading related objects…</div>
           : relatives.length === 0
-            ? <div style={{ fontSize: 13, color: '#9aa0a6' }}>No related objects found.</div>
+            ? <div style={{ fontSize: 13, color: '#6b7280' }}>No related objects found.</div>
             : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {/* Current object always shown at top */}
@@ -782,7 +782,7 @@ function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
                   return (
                     <div key={rel}>
                       <div style={{
-                        fontSize: 10, color: '#bdc1c6', textTransform: 'uppercase',
+                        fontSize: 10, color: '#6b7280', textTransform: 'uppercase',
                         letterSpacing: '0.6px', padding: '8px 12px 4px',
                       }}>
                         {rel === 'parent' ? '↑ Parent' : rel === 'child' ? '↓ Children' : '↔ Siblings'}
@@ -805,20 +805,20 @@ function ObjectDetail({ obj, objectId, onBack, onLaunch }) {
       {/* Launch button */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)',
-        borderTop: '1px solid #e8eaed', padding: '12px 24px',
+        background: 'rgba(15,17,23,0.95)', backdropFilter: 'blur(8px)',
+        borderTop: '1px solid #2a2d3e', padding: '12px 24px',
         display: 'flex', justifyContent: 'center',
       }}>
         <button
           onClick={() => onLaunch(objectId)}
           style={{
-            background: '#1a73e8', color: '#fff', border: 'none',
+            background: '#00e5a0', color: '#0f1117', border: 'none',
             borderRadius: 8, padding: '10px 48px', fontSize: 14,
             fontWeight: 600, cursor: 'pointer', maxWidth: 400, width: '100%',
             transition: 'background 0.15s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#1557b0'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#1a73e8'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#00c98a'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = '#00e5a0'; }}
         >
           Open in Environment →
         </button>
@@ -981,8 +981,8 @@ function App() {
             <button
               onClick={() => setView('detail')}
               style={{
-                background: 'none', border: '1px solid #dadce0', borderRadius: 6,
-                padding: '4px 10px', fontSize: 12, color: '#5f6368', cursor: 'pointer',
+                background: 'none', border: '1px solid #2a2d3e', borderRadius: 6,
+                padding: '4px 10px', fontSize: 12, color: '#6b7280', cursor: 'pointer',
               }}
             >
               ← Back

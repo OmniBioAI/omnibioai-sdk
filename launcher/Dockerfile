@@ -10,5 +10,6 @@ RUN npm run build
 FROM nginx:alpine
 LABEL org.opencontainers.image.source=https://github.com/man4ish/omnibioai
 COPY --from=builder /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 5190
 CMD ["nginx", "-g", "daemon off;"]

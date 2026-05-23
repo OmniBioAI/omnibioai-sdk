@@ -6,8 +6,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #f9fafb;
-  color: #111827;
+  background: #0f1117;
+  color: #ffffff;
 }
 
 .app {
@@ -32,7 +32,7 @@ body {
 .logo {
   font-size: 18px;
   font-weight: 600;
-  color: #2563eb;
+  color: #00e5a0;
 }
 
 .logo-subtitle {
@@ -42,17 +42,18 @@ body {
 }
 
 .type-badge {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #0d2137;
+  color: #0094ff;
   font-size: 12px;
   padding: 3px 10px;
   border-radius: 20px;
+  border: 1px solid #1a3a5c;
 }
 
 /* ── Object card ── */
 .object-card {
-  background: #f8faff;
-  border: 1px solid #e0eaff;
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
   border-radius: 10px;
   padding: 16px 20px;
   margin-bottom: 24px;
@@ -61,7 +62,7 @@ body {
 .object-name {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
 .object-id {
@@ -73,7 +74,7 @@ body {
 
 .divider {
   height: 1px;
-  background: #e5e7eb;
+  background: #2a2d3e;
   margin: 12px 0;
 }
 
@@ -90,7 +91,7 @@ body {
 
 .meta-value {
   font-size: 13px;
-  color: #111827;
+  color: #ffffff;
   word-break: break-word;
 }
 
@@ -118,8 +119,8 @@ body {
 
 /* ── Environment card ── */
 .env-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
   border-radius: 10px;
   padding: 16px;
   cursor: pointer;
@@ -127,13 +128,13 @@ body {
 }
 
 .env-card:hover {
-  background: #f8faff;
-  border-color: #93c5fd;
+  background: #1f2340;
+  border-color: #00e5a0;
 }
 
 .env-card--selected {
-  border: 2px solid #2563eb;
-  background: #f0f7ff;
+  border: 2px solid #00e5a0;
+  background: #0d2a20;
 }
 
 .env-icon {
@@ -148,7 +149,7 @@ body {
 .env-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
   margin-top: 10px;
 }
 
@@ -162,8 +163,8 @@ body {
 .env-badge {
   display: inline-block;
   margin-top: 8px;
-  background: #dcfce7;
-  color: #166534;
+  background: #0a2a1a;
+  color: #00e5a0;
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 20px;
@@ -173,10 +174,10 @@ body {
 .launch-btn {
   width: 100%;
   height: 44px;
-  background: #2563eb;
-  color: #ffffff;
+  background: #00e5a0;
+  color: #0f1117;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 8px;
   border: none;
   cursor: pointer;
@@ -184,7 +185,7 @@ body {
 }
 
 .launch-btn:hover {
-  background: #1d4ed8;
+  background: #00c98a;
 }
 
 /* ── Loading spinner ── */
@@ -197,8 +198,8 @@ body {
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e5e7eb;
-  border-top-color: #2563eb;
+  border: 3px solid #2a2d3e;
+  border-top-color: #00e5a0;
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
 }
@@ -209,11 +210,11 @@ body {
 
 /* ── Error card ── */
 .error-card {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: #2a0f0f;
+  border: 1px solid #ef4444;
   border-radius: 10px;
   padding: 16px 20px;
-  color: #991b1b;
+  color: #ef4444;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -222,7 +223,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,7 +231,8 @@ body {
 }
 
 .modal-card {
-  background: #ffffff;
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
   border-radius: 12px;
   padding: 24px;
   max-width: 400px;
@@ -243,13 +245,13 @@ body {
 .modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
   margin-bottom: 12px;
 }
 
 .modal-body {
   font-size: 14px;
-  color: #374151;
+  color: #6b7280;
   line-height: 1.5;
   margin-bottom: 20px;
 }
@@ -262,7 +264,7 @@ body {
 }
 
 .modal-btn-primary {
-  background: #2563eb;
+  background: #0094ff;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -275,7 +277,7 @@ body {
 }
 
 .modal-btn-primary:hover {
-  background: #1d4ed8;
+  background: #0078d4;
 }
 
 .modal-btn-secondary {
@@ -288,6 +290,10 @@ body {
   cursor: pointer;
 }
 
+.modal-btn-secondary:hover {
+  color: #ffffff;
+}
+
 .modal-note {
   font-size: 12px;
   color: #6b7280;
@@ -297,8 +303,8 @@ body {
 
 .modal-btn-direct {
   background: transparent;
-  color: #2563eb;
-  border: 1px solid #2563eb;
+  color: #0094ff;
+  border: 1px solid #0094ff;
   border-radius: 6px;
   padding: 8px 20px;
   font-size: 14px;
@@ -308,7 +314,7 @@ body {
 }
 
 .modal-btn-direct:hover {
-  background: #eff6ff;
+  background: #0d2137;
 }
 
 /* ── Toast ── */
@@ -317,7 +323,8 @@ body {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: #1f2937;
+  background: #1a1d2e;
+  border: 1px solid #2a2d3e;
   color: #ffffff;
   font-size: 13px;
   padding: 10px 20px;

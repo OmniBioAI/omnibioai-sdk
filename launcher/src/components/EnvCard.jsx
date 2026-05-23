@@ -1,9 +1,9 @@
 import React from 'react';
 
 const ICON_BG = {
-  notebook: '#fff7ed',
-  python: '#eff6ff',
-  r: '#f0fdf4',
+  notebook: '#2a1800',
+  python:   '#0d2137',
+  r:        '#0a2a1a',
 };
 
 function NotebookIcon() {
