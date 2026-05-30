@@ -209,43 +209,9 @@ Used internally by the OmniBioAI workbench and services.
 
 ---
 
-## Launcher UI
+## Opening objects in analysis environments
 
-A standalone React app that lets users open any OmniBioAI object in their
-preferred analysis environment.
-
-### Running the launcher
-
-```bash
-cd launcher
-npm install
-npm start          # dev server on port 3000
-# or
-npm run build
-npx serve -s build -l 5190
-```
-
-### Opening the launcher for an object
-
-```python
-from omnibioai_sdk import OmniClient
-c = OmniClient()
-url = c.get_launcher_url("56d3fc3a-709b-4ed0-bf17-8cb73c6746b0")
-print(url)  # http://127.0.0.1:5190/?object_id=56d3fc3a-...
-```
-
-Or link directly from any HTML:
-
-```html
-<a href="http://127.0.0.1:5190/?object_id=<object_id>">Analyze</a>
-```
-
-### Environments supported
-
-- **Notebook**: opens JupyterLab with object preloaded via URL param
-- **Python**: copies env vars + snippet to clipboard, opens VS Code
-- **R/RStudio**: downloads a ready-to-run .R script, opens RStudio
-
-### Environment variables (launcher)
-
-See `launcher/.env.example`
+For opening objects in JupyterLab, VS Code, or RStudio, see the
+[omnibioai-launcher](https://github.com/man4ish/omnibioai-launcher)
+repository. The launcher is a standalone React UI that accepts an
+`object_id` via URL parameter and handles environment dispatch.
