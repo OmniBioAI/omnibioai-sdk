@@ -24,14 +24,19 @@ The SDK is intentionally **thin and explicit** — it does not hide API behavior
 ## Installation
 
 ```bash
-pip install omnibioai-sdk
-```
+# From GitHub Packages (requires token with read:packages scope)
+pip install omnibioai-sdk \
+  --index-url https://pip.pkg.github.com/man4ish/simple/
 
-Or during development:
+# Or directly from GitHub
+pip install git+https://github.com/man4ish/omnibioai_sdk.git
 
-```bash
+# Or locally during development
 pip install -e .
 ```
+
+> **Note:** `omnibioai-sdk` is not currently published to PyPI.
+> Install from GitHub or use the local editable install during development.
 
 ---
 
@@ -41,12 +46,37 @@ pip install -e .
 from omnibioai_sdk import OmniClient
 
 c = OmniClient(
-    base_url="http://127.0.0.1:8001",
-    token="dev"
+    base_url="http://127.0.0.1:8080",   # api-gateway
+    token="your-jwt-token"               # obtain via POST /auth/login
 )
 
 objects = c.objects_list()
 print(objects["count"])
+```
+
+> **Note:** All requests go through `api-gateway` (port 8080) which
+> enforces JWT authentication and routes to the correct backend service.
+> Never point the SDK directly at individual services (auth-service,
+> workbench etc.) in production.
+
+### Getting a token
+
+```python
+import requests
+
+resp = requests.post("http://127.0.0.1:8080/auth/login",
+    json={"email": "admin@example.com", "password": "yourpassword"})
+token = resp.json()["access_token"]
+
+from omnibioai_sdk import OmniClient
+c = OmniClient(base_url="http://127.0.0.1:8080", token=token)
+```
+
+Or via environment variables:
+
+```bash
+export OMNIBIOAI_BASE_URL=http://127.0.0.1:8080
+export OMNIBIOAI_TOKEN=your-jwt-token
 ```
 
 ---
@@ -66,7 +96,7 @@ You can pass credentials explicitly or via environment variables.
 ### Environment Variables (recommended)
 
 ```bash
-export OMNIBIOAI_BASE_URL=http://127.0.0.1:8001
+export OMNIBIOAI_BASE_URL=http://127.0.0.1:8080   # api-gateway
 export OMNIBIOAI_TOKEN=dev
 ```
 
@@ -75,6 +105,19 @@ Then simply:
 ```python
 c = OmniClient()
 ```
+
+---
+
+## URLs by environment
+
+| Environment | Base URL | Notes |
+|-------------|----------|-------|
+| Local development | `http://127.0.0.1:8080` | api-gateway direct |
+| Via nginx (Studio) | `http://localhost/_svc/gateway` | JWT required |
+| Production | `https://api.omnibioai.org` | TLS + JWT required |
+
+Always use the api-gateway URL — never point directly at individual
+services (workbench :8000, auth-service :8001, etc.).
 
 ---
 
@@ -193,6 +236,17 @@ The SDK follows **semantic versioning**:
 
 * `0.x` → fast iteration
 * `1.0+` → stable API surface
+
+---
+
+## Related packages
+
+| Package | Purpose |
+|---------|---------|
+| `omnibioai-launcher` | Browser UI — alternative to SDK for interactive use |
+| `omnibioai-model-registry` | ML model versioning SDK (`omr` CLI + Python client) |
+| `omnibioai-studio` | Desktop app — manages the full stack the SDK connects to |
+| `omnibioai-iam-client` | Internal service auth SDK (for service-to-service calls) |
 
 ---
 
