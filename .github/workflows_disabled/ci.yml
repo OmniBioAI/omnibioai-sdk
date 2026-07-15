@@ -68,7 +68,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/man4ish/omnibioai-sdk
+          images: ghcr.io/omnibioai/omnibioai-sdk
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
