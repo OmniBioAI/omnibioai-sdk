@@ -32,7 +32,7 @@ def test_omnibioai_sdk_package_all_unchanged():
 
 
 def test_omnibioai_package_exports_both_new_and_legacy_clients():
-    assert set(omnibioai.__all__) == {"OmniBioAI", "OmniClient"}
+    assert {"OmniBioAI", "OmniClient"} <= set(omnibioai.__all__)
 
 
 def test_omnibioai_biai_importable_from_new_namespace():
