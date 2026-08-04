@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "omnibioai-sdk"
-version = "0.1.1"
+version = "0.2.0"
 description = "Python SDK for OmniBioAI APIs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -39,11 +39,17 @@ Source = "https://github.com/man4ish/omnibioai_sdk"
 Issues = "https://github.com/man4ish/omnibioai_sdk/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["omnibioai_sdk"]
+# omnibioai_sdk is now a thin backward-compatibility shim over omnibioai
+# (SDK Phase 2 -- see omnibioai_sdk/__init__.py) -- both ship in the same
+# `omnibioai-sdk` PyPI distribution so `pip install omnibioai-sdk` is
+# unchanged for existing users, while new code imports `from omnibioai
+# import OmniBioAI`.
+packages = ["omnibioai", "omnibioai_sdk"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = [
+  "--cov=omnibioai",
   "--cov=omnibioai_sdk",
   "--cov-report=term-missing",
   "--cov-fail-under=95",
@@ -51,7 +57,7 @@ addopts = [
 
 [tool.coverage.run]
 branch = true
-source = ["omnibioai_sdk"]
+source = ["omnibioai", "omnibioai_sdk"]
 omit = [
   "*/tests/*",
   "*/__pycache__/*",
