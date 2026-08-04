@@ -10,6 +10,7 @@ it -- see omnibioai/legacy.py.
 """
 from .client import OmniBioAI
 from .legacy import OmniClient
+from .models import ModelsClient
 from .rag import RAGClient
 
-__all__ = ["OmniBioAI", "OmniClient", "RAGClient"]
+__all__ = ["OmniBioAI", "OmniClient", "RAGClient", "ModelsClient"]
