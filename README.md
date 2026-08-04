@@ -6,14 +6,18 @@
 > from omnibioai import OmniBioAI
 >
 > client = OmniBioAI(access_token="jwt-token")
+>
+> result = client.rag.query("BRCA1 pathway analysis")
 > ```
 > `OmniBioAI` handles token refresh and error normalization across
-> OmniBioAI services; per-service clients (`.rag`, `.models`, `.workflows`)
-> are landing in follow-up releases. **Nothing existing breaks**: the
-> object-registry client documented below is unchanged and fully
-> supported, importable from either `omnibioai_sdk` (as before) or
-> `omnibioai` (`from omnibioai import OmniClient`) -- both resolve to the
-> exact same class.
+> OmniBioAI services. `.rag` is available now; `.models` and `.workflows`
+> are landing in follow-up releases (`.workflows` is blocked on an
+> architecture decision -- see the SDK Phase 1 findings report).
+> **Nothing existing breaks**: the object-registry client documented
+> below is unchanged and fully supported, importable from either
+> `omnibioai_sdk` (as before) or `omnibioai`
+> (`from omnibioai import OmniClient`) -- both resolve to the exact same
+> class.
 
 **OmniBioAI SDK** is a lightweight Python client for interacting with the **OmniBioAI platform APIs**, including:
 

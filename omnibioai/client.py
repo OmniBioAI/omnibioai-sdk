@@ -5,6 +5,7 @@ from typing import Optional
 
 from .auth.session import AuthenticatedSession
 from .auth.tokens import TokenPair
+from .rag.client import RAGClient
 
 # No public API Gateway URL is documented anywhere in this ecosystem yet
 # (Phase 1 findings, Open Question #2) -- defaults to the gateway's own
@@ -32,13 +33,13 @@ class OmniBioAI:
     others, and there is exactly one connection pool for the whole
     client.
 
-    .rag / .models / .workflows sub-clients ship in later PRs (SDK Phase
-    2 PR2/PR3/PR4) once each one's own scope is confirmed (workflows is
+    .models / .workflows sub-clients ship in later PRs (SDK Phase 2
+    PR3/PR4) once each one's own scope is confirmed (workflows is
     explicitly blocked on a TES-vs-workflow-bundles decision -- see the
-    Phase 1 findings report's Open Questions). This constructor
-    deliberately does not stub them out as empty placeholders, so
-    `client.rag` raises a normal AttributeError if called before PR2
-    ships, rather than something confusing.
+    Phase 1 findings report's Open Questions). Until then, `client.models`/
+    `client.workflows` raise a normal AttributeError rather than
+    something confusing, since this constructor deliberately does not
+    stub them out as empty placeholders. `.rag` is available now (PR2).
 
     Does not verify or decode access_token/refresh_token, and does not
     depend on omnibioai-iam-client -- see the Phase 1 findings report's
@@ -60,6 +61,7 @@ class OmniBioAI:
         self.session = AuthenticatedSession(
             tokens=self.tokens, auth_url=auth_url, timeout=timeout,
         )
+        self.rag = RAGClient(base_url=f"{self.base_url}/rag", session=self.session)
 
     @property
     def access_token(self) -> str:
