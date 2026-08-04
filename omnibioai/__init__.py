@@ -12,5 +12,7 @@ from .client import OmniBioAI
 from .legacy import OmniClient
 from .models import ModelsClient
 from .rag import RAGClient
+from .tes import TESClient
+from .workflows import WorkflowsClient
 
-__all__ = ["OmniBioAI", "OmniClient", "RAGClient", "ModelsClient"]
+__all__ = ["OmniBioAI", "OmniClient", "RAGClient", "ModelsClient", "TESClient", "WorkflowsClient"]

@@ -7,6 +7,8 @@ from .auth.session import AuthenticatedSession
 from .auth.tokens import TokenPair
 from .models.client import ModelsClient
 from .rag.client import RAGClient
+from .tes.client import TESClient
+from .workflows.client import WorkflowsClient
 
 # No public API Gateway URL is documented anywhere in this ecosystem yet
 # (Phase 1 findings, Open Question #2) -- defaults to the gateway's own
@@ -34,12 +36,12 @@ class OmniBioAI:
     others, and there is exactly one connection pool for the whole
     client.
 
-    .workflows ships in a later PR (SDK Phase 2 PR4), blocked on a
-    TES-vs-workflow-bundles architecture decision -- see the Phase 1
-    findings report's Open Questions. Until then, `client.workflows`
-    raises a normal AttributeError rather than something confusing,
-    since this constructor deliberately does not stub it out as an empty
-    placeholder. `.rag` (PR2) and `.models` (PR3) are available now.
+    All four sub-clients are available: `.rag` (PR2), `.models` (PR3),
+    `.tes` and `.workflows` (PR4) -- kept as two separate abstractions
+    per the Phase 1 findings report's Open Question #3: `.tes` is the
+    low-level tool/job execution engine (tool_id-addressed), `.workflows`
+    is high-level named/versioned pipeline execution
+    (workflow-name-addressed). See each client's own module docstring.
 
     Does not verify or decode access_token/refresh_token, and does not
     depend on omnibioai-iam-client -- see the Phase 1 findings report's
@@ -53,6 +55,7 @@ class OmniBioAI:
         refresh_token: Optional[str] = None,
         base_url: str = DEFAULT_BASE_URL,
         auth_url: str = DEFAULT_AUTH_URL,
+        workflows_url: Optional[str] = None,
         timeout: float = 60,
     ) -> None:
         self.base_url = base_url.rstrip("/")
@@ -63,6 +66,16 @@ class OmniBioAI:
         )
         self.rag = RAGClient(base_url=f"{self.base_url}/rag", session=self.session)
         self.models = ModelsClient(base_url=f"{self.base_url}/model-registry", session=self.session)
+        self.tes = TESClient(base_url=f"{self.base_url}/tes", session=self.session)
+        # workflows_url is a SEPARATE override from base_url, unlike
+        # .rag/.models/.tes -- omnibioai-workflow-bundles has no confirmed
+        # route in the API Gateway's SERVICE_MAP (see WorkflowsClient's
+        # own docstring), so defaulting it under base_url the same way
+        # would silently assume gateway routing that doesn't exist yet.
+        self.workflows = WorkflowsClient(
+            base_url=(workflows_url or f"{self.base_url}/workflow-bundles").rstrip("/"),
+            session=self.session,
+        )
 
     @property
     def access_token(self) -> str:
