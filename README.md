@@ -54,10 +54,10 @@ The SDK is intentionally **thin and explicit** — it does not hide API behavior
 ```bash
 # From GitHub Packages (requires token with read:packages scope)
 pip install omnibioai-sdk \
-  --index-url https://pip.pkg.github.com/man4ish/simple/
+  --index-url https://pip.pkg.github.com/OmniBioAI/simple/
 
 # Or directly from GitHub
-pip install git+https://github.com/man4ish/omnibioai_sdk.git
+pip install git+https://github.com/OmniBioAI/omnibioai-sdk.git
 
 # Or locally during development
 pip install -e .
@@ -111,9 +111,8 @@ export OMNIBIOAI_TOKEN=your-jwt-token
 
 ## Authentication
 
-The SDK uses **header-based authentication**.
-
-For development:
+The legacy `OmniClient` (Object Registry API, below) uses simple
+**header-based authentication** — a single static token, no refresh:
 
 ```text
 Authorization: Bearer dev
@@ -134,6 +133,42 @@ Then simply:
 c = OmniClient()
 ```
 
+### The new `OmniBioAI` client's auth model
+
+`OmniBioAI` (`.rag`/`.models`/`.tes`/`.workflows`) takes an explicit
+access/refresh token pair instead and manages them automatically:
+
+```python
+from omnibioai import OmniBioAI
+
+client = OmniBioAI(
+    access_token="jwt-token",
+    refresh_token="refresh-token",   # optional but required for auto-refresh
+)
+```
+
+- **One shared session, one token pair.** All four sub-clients are
+  constructed against the same `AuthenticatedSession`/`TokenPair` — a
+  refresh triggered by any one of them (e.g. `.rag.query(...)`) is
+  immediately visible to the others on their very next call.
+- **Refresh-on-401, once.** A `401` triggers exactly one refresh call
+  against `auth_url + /auth/refresh`; a second `401` (or a failed
+  refresh) raises `AuthenticationError` rather than retrying again —
+  mirroring `omnibioai-auth`'s own refresh-token-family-compromise
+  contract, where re-presenting an already-rotated refresh token is
+  treated as compromise, not a retriable error.
+- **`client.access_token` / `client.refresh_token`** reflect the
+  *current* tokens, which may differ from what you passed to `__init__`
+  after the first automatic refresh (`omnibioai-auth` refresh tokens are
+  single-use and rotate on every refresh).
+- **`X-Trace-Id`** is generated fresh per call (or supplied by the
+  caller) and recorded on `client.session.last_trace_id`, matching the
+  header every IAM Foundation service (gateway, RAG, TES, …) already
+  reads — useful for correlating one client-side error across services.
+- **No local JWT verification.** The SDK never decodes or verifies the
+  access/refresh token itself — that's the API Gateway's and each
+  target service's job, not this client's.
+
 ---
 
 ## URLs by environment
@@ -144,8 +179,20 @@ c = OmniClient()
 | Via nginx (Studio) | `http://localhost/_svc/gateway` | JWT required |
 | Production | `https://api.omnibioai.org` | TLS + JWT required |
 
-Always use the api-gateway URL — never point directly at individual
-services (workbench :8000, auth-service :8001, etc.).
+Always use the api-gateway URL for `base_url` — never point directly at
+individual services (workbench :8000, etc.).
+
+**Two deliberate exceptions:**
+
+- `OmniBioAI`'s login/refresh/logout calls go to a *separate* `auth_url`
+  (default `https://auth.omnibioai.org`), not `base_url` — the API
+  Gateway's `SERVICE_MAP` has no `auth` entry, so those routes aren't
+  reachable through it today. Override with `OmniBioAI(..., auth_url=...)`
+  for non-default deployments.
+- `.workflows` defaults to `{base_url}/workflow-bundles`, but
+  `omnibioai-workflow-bundles` has no *confirmed* route in the Gateway's
+  `SERVICE_MAP` yet — pass `OmniBioAI(..., workflows_url=...)` explicitly
+  until it does.
 
 ---
 
@@ -220,13 +267,37 @@ export OMNIBIOAI_JUPYTER_TOKEN=devtoken
 ## Project Structure
 
 ```text
-omnibioai_sdk/
-├── omnibioai_sdk/
-│   ├── __init__.py
-│   └── client.py
+omnibioai-sdk/
+├── omnibioai/                  # new, ecosystem-wide package (0.2.0)
+│   ├── __init__.py             # exports OmniBioAI, OmniClient, RAGClient,
+│   │                            # ModelsClient, TESClient, WorkflowsClient
+│   ├── client.py                # OmniBioAI — top-level client, owns one
+│   │                            # shared AuthenticatedSession
+│   ├── legacy.py                # OmniClient, relocated unchanged from
+│   │                            # omnibioai_sdk/client.py — see below
+│   ├── exceptions.py
+│   ├── _base.py
+│   ├── auth/
+│   │   ├── session.py           # AuthenticatedSession — auth header
+│   │   │                        # injection, refresh-on-401, X-Trace-Id
+│   │   └── tokens.py            # TokenPair — mutated in place on refresh
+│   ├── rag/client.py            # RAGClient — .query(...)
+│   ├── models/client.py         # ModelsClient — .get(task, ref), task-scoped
+│   ├── tes/client.py            # TESClient — .submit(tool_id, inputs=...)
+│   └── workflows/client.py      # WorkflowsClient — .run(workflow_name, inputs=...)
+├── omnibioai_sdk/                # pre-existing package, kept for compatibility
+│   ├── __init__.py               # re-exports OmniClient from omnibioai/legacy.py
+│   └── client.py                 # re-exports OmniClient from omnibioai/legacy.py
+├── tests/
 ├── pyproject.toml
-├── README.md
+└── README.md
 ```
+
+`omnibioai_sdk/` is not a separate, unmaintained package — both of its
+modules now just re-export `OmniClient` from `omnibioai/legacy.py`, so
+`from omnibioai_sdk import OmniClient` (every existing caller's import)
+keeps working unchanged and indefinitely, alongside the new
+`from omnibioai import OmniClient` path.
 
 ---
 
@@ -272,9 +343,12 @@ The SDK follows **semantic versioning**:
 | Package | Purpose |
 |---------|---------|
 | `omnibioai-launcher` | Browser UI — alternative to SDK for interactive use |
-| `omnibioai-model-registry` | ML model versioning SDK (`omr` CLI + Python client) |
+| `omnibioai-model-registry` | Backs `.models` — ML model versioning (`omr` CLI + its own Python client) |
+| `omnibioai-rag` | Backs `.rag` — PubMed/literature query API |
+| `omnibioai-tes` | Backs `.tes` — low-level, tool_id-addressed execution |
+| `omnibioai-workflow-bundles` | Backs `.workflows` — named/versioned pipeline execution; no confirmed API Gateway route yet, see [URLs by environment](#urls-by-environment) |
 | `omnibioai-studio` | Desktop app — manages the full stack the SDK connects to |
-| `omnibioai-iam-client` | Internal service auth SDK (for service-to-service calls) |
+| `omnibioai-iam-client` | Internal service auth SDK (for service-to-service calls) — not used by this SDK itself; see [Authentication](#authentication) |
 
 ---
 
@@ -294,6 +368,6 @@ Used internally by the OmniBioAI workbench and services.
 ## Opening objects in analysis environments
 
 For opening objects in JupyterLab, VS Code, or RStudio, see the
-[omnibioai-launcher](https://github.com/man4ish/omnibioai-launcher)
+[omnibioai-launcher](https://github.com/OmniBioAI/omnibioai-launcher)
 repository. The launcher is a standalone React UI that accepts an
 `object_id` via URL parameter and handles environment dispatch.
