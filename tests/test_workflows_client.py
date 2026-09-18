@@ -7,6 +7,9 @@ request-shape correctness against omnibioai-workflow-bundles's actual
 own client-side ResourceNotFoundError for a version that doesn't exist),
 the standard error-mapping outcomes, and a full successful
 list -> get -> get_inputs -> run -> status lifecycle.
+
+Developer:
+    Manish Kumar <manish@omnibioai.org>
 """
 from __future__ import annotations
 
@@ -27,22 +30,30 @@ WF_URL = f"{BASE}/workflow-bundles"
 
 
 def _client():
+    """An OmniBioAI client pointed at the module's mock gateway BASE."""
     return OmniBioAI(access_token="tok", base_url=BASE)
 
 
 class TestWorkflowsUrlDefault:
+    """WorkflowsClient's base_url defaults to <base_url>/workflow-bundles, or an
+    explicit workflows_url when given."""
     def test_defaults_to_base_url_slash_workflow_bundles(self):
+        """With no workflows_url given, the workflows sub-client's base_url is
+        <base_url>/workflow-bundles."""
         c = _client()
         assert c.workflows.base_url == f"{BASE}/workflow-bundles"
 
     def test_explicit_workflows_url_overrides_default(self):
+        """An explicit workflows_url overrides the derived default."""
         c = OmniBioAI(access_token="tok", base_url=BASE, workflows_url="https://wf.internal.example")
         assert c.workflows.base_url == "https://wf.internal.example"
 
 
 class TestList:
+    """WorkflowsClient.list() calls GET /v1/workflows."""
     @responses.activate
     def test_calls_expected_endpoint(self):
+        """list() returns the workflow entries from the mocked response."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows",
@@ -53,8 +64,11 @@ class TestList:
 
 
 class TestGet:
+    """WorkflowsClient.get() calls GET /v1/workflows/{name} and raises
+    ResourceNotFoundError for an unknown name."""
     @responses.activate
     def test_calls_expected_endpoint(self):
+        """get(name) returns every version entry for that workflow name."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/rna-seq-pipeline",
@@ -68,6 +82,7 @@ class TestGet:
 
     @responses.activate
     def test_unknown_name_raises_resource_not_found(self):
+        """get() for a name the service returns 404 for raises ResourceNotFoundError."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/does-not-exist",
@@ -81,8 +96,10 @@ class TestGet:
 
 
 class TestGetInputs:
+    """WorkflowsClient.get_inputs() calls GET /v1/workflows/{id}/inputs."""
     @responses.activate
     def test_calls_expected_endpoint(self):
+        """get_inputs(id) returns the workflow's default inputs, engine and entrypoint."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/2/inputs",
@@ -94,8 +111,14 @@ class TestGetInputs:
 
 
 class TestRun:
+    """WorkflowsClient.run() resolves a workflow name to a version id (newest by
+    default, or a specific pinned version) before POSTing /v1/workflows/{id}/run, and
+    raises ResourceNotFoundError client-side for an unknown version without ever
+    attempting the run."""
     @responses.activate
     def test_resolves_name_to_newest_version_id_and_runs(self):
+        """run(name) resolves to the newest listed version's id (not the first one
+        returned) and posts the given inputs to that version's run endpoint."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/rna-seq-pipeline",
@@ -118,6 +141,8 @@ class TestRun:
 
     @responses.activate
     def test_pinned_version_resolves_correct_id(self):
+        """run(name, version=...) resolves to the id of that specific pinned version,
+        not the newest."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/rna-seq-pipeline",
@@ -136,6 +161,8 @@ class TestRun:
 
     @responses.activate
     def test_unknown_version_raises_resource_not_found_without_extra_call(self):
+        """run(name, version=...) for a version that doesn't exist among the listed ones
+        raises ResourceNotFoundError client-side and never attempts the run POST."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/rna-seq-pipeline",
@@ -150,6 +177,7 @@ class TestRun:
 
     @responses.activate
     def test_engine_override_forwarded(self):
+        """run(..., engine=...) forwards the engine override in the run request body."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/wf",
@@ -165,6 +193,7 @@ class TestRun:
 
     @responses.activate
     def test_no_inputs_omits_key(self):
+        """run() with no inputs sends an empty request body, omitting the inputs key."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows/wf",
@@ -180,8 +209,10 @@ class TestRun:
 
 
 class TestStatus:
+    """WorkflowsClient.status() calls GET /v1/runs/{run_id}."""
     @responses.activate
     def test_calls_expected_endpoint(self):
+        """status(run_id) returns the run's current status."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/runs/abc12345",
@@ -192,8 +223,11 @@ class TestStatus:
 
 
 class TestErrorMapping:
+    """WorkflowsClient's standard error mapping: 401 to AuthenticationError, 403 to
+    PermissionDeniedError, and 503 to ServiceUnavailableError."""
     @responses.activate
     def test_authentication_failure(self):
+        """A 401 on list() raises AuthenticationError."""
         c = _client()
         responses.add(responses.GET, f"{WF_URL}/v1/workflows", body="", status=401)
         try:
@@ -204,6 +238,7 @@ class TestErrorMapping:
 
     @responses.activate
     def test_permission_denied(self):
+        """A 403 on list() raises PermissionDeniedError."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows",
@@ -217,6 +252,7 @@ class TestErrorMapping:
 
     @responses.activate
     def test_service_unavailable(self):
+        """A 503 on list() raises ServiceUnavailableError."""
         c = _client()
         responses.add(
             responses.GET, f"{WF_URL}/v1/workflows",
@@ -230,6 +266,8 @@ class TestErrorMapping:
 
 
 class TestFullLifecycle:
+    """List workflows, inspect one, read its default inputs, execute it by name, then
+    poll the resulting run's status, exercising the target usage pattern end to end."""
     @responses.activate
     def test_list_get_inputs_run_status(self):
         """End-to-end: list workflows, inspect one, read its default

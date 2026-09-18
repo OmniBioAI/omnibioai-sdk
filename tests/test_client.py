@@ -1,3 +1,11 @@
+"""Unit tests for the legacy omnibioai_sdk.OmniClient: constructor defaults (hardcoded,
+env-derived and explicit), the headers property, and objects_list()/object_get() against
+mocked HTTP responses.
+
+Developer:
+    Manish Kumar <manish@omnibioai.org>
+"""
+
 from __future__ import annotations
 
 import pytest
@@ -20,6 +28,8 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch):
 # ── __init__ ──────────────────────────────────────────────────────────────────
 
 def test_client_hardcoded_defaults():
+    """With no arguments and no env vars set, OmniClient defaults to base_url
+    http://127.0.0.1:8001, token dev and timeout 60."""
     c = OmniClient()
     assert c.base_url == "http://127.0.0.1:8001"
     assert c.token == "dev"
@@ -27,6 +37,8 @@ def test_client_hardcoded_defaults():
 
 
 def test_client_defaults_from_env(monkeypatch: pytest.MonkeyPatch):
+    """OMNIBIOAI_BASE_URL and OMNIBIOAI_TOKEN env vars are read into base_url and token
+    when no explicit arguments are given."""
     monkeypatch.setenv("OMNIBIOAI_BASE_URL", BASE)
     monkeypatch.setenv("OMNIBIOAI_TOKEN", "envtoken")
     c = OmniClient()
@@ -35,6 +47,7 @@ def test_client_defaults_from_env(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_client_explicit_args():
+    """Explicit base_url, token and timeout arguments override env vars and defaults."""
     c = OmniClient(base_url=BASE, token="mytoken", timeout=10)
     assert c.base_url == BASE
     assert c.token == "mytoken"
@@ -42,6 +55,7 @@ def test_client_explicit_args():
 
 
 def test_client_strips_trailing_slash():
+    """A trailing slash on base_url is stripped."""
     c = OmniClient(base_url="http://127.0.0.1:8001/")
     assert c.base_url == "http://127.0.0.1:8001"
 
@@ -49,6 +63,7 @@ def test_client_strips_trailing_slash():
 # ── headers ───────────────────────────────────────────────────────────────────
 
 def test_headers_property():
+    """headers returns {'Authorization': 'Bearer <token>'}."""
     c = OmniClient(base_url=BASE, token="tok")
     assert c.headers == {"Authorization": "Bearer tok"}
 
@@ -57,6 +72,8 @@ def test_headers_property():
 
 @responses.activate
 def test_objects_list_success():
+    """objects_list() returns the parsed count and items, and sends the token as a
+    Bearer Authorization header."""
     c = OmniClient(base_url=BASE, token="dev", timeout=3)
     responses.add(
         responses.GET,
@@ -72,6 +89,7 @@ def test_objects_list_success():
 
 @responses.activate
 def test_objects_list_401_raises():
+    """objects_list() raises requests.HTTPError for a 401 response."""
     c = OmniClient(base_url=BASE, token="bad")
     responses.add(responses.GET, f"{BASE}/api/dev/objects/", json={}, status=401)
     with pytest.raises(requests.HTTPError):
@@ -80,6 +98,7 @@ def test_objects_list_401_raises():
 
 @responses.activate
 def test_objects_list_500_raises():
+    """objects_list() raises requests.HTTPError for a 500 response."""
     c = OmniClient(base_url=BASE, token="dev")
     responses.add(responses.GET, f"{BASE}/api/dev/objects/", json={}, status=500)
     with pytest.raises(requests.HTTPError):
@@ -90,6 +109,7 @@ def test_objects_list_500_raises():
 
 @responses.activate
 def test_object_get_success():
+    """object_get() returns the object's type and metadata."""
     c = OmniClient(base_url=BASE, token="dev")
     responses.add(
         responses.GET,
@@ -104,6 +124,7 @@ def test_object_get_success():
 
 @responses.activate
 def test_object_get_404_raises():
+    """object_get() raises requests.HTTPError for a 404 response."""
     c = OmniClient(base_url=BASE, token="dev")
     responses.add(responses.GET, f"{BASE}/api/dev/objects/missing/", json={}, status=404)
     with pytest.raises(requests.HTTPError):

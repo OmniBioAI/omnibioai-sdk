@@ -7,6 +7,9 @@ omnibioai-rag's actual endpoint contract, plus the standard error-mapping
 outcomes (dataset.read denied -> PermissionDeniedError, no/invalid token
 -> AuthenticationError) at the sub-client level, following the same
 `responses`-based mocking style as the rest of this test suite.
+
+Developer:
+    Manish Kumar <manish@omnibioai.org>
 """
 from __future__ import annotations
 
@@ -21,12 +24,17 @@ BASE = "https://gateway.example.com"
 
 
 def _client():
+    """An OmniBioAI client pointed at the module's mock gateway BASE."""
     return OmniBioAI(access_token="tok", base_url=BASE)
 
 
 class TestQuery:
+    """RAGClient.query() request-shape and default handling, and its error mapping: a
+    403 raises PermissionDeniedError and a 401 raises AuthenticationError."""
     @responses.activate
     def test_minimal_call_sends_expected_payload(self):
+        """A minimal query() call sends study 'default', mode 'rag' and hybrid_search
+        False, with no top_k, and returns the parsed response."""
         c = _client()
         responses.add(
             responses.POST, f"{BASE}/rag/v1/query",
@@ -45,6 +53,7 @@ class TestQuery:
 
     @responses.activate
     def test_top_k_omitted_when_not_supplied(self):
+        """top_k is omitted from the request body when not passed."""
         c = _client()
         responses.add(responses.POST, f"{BASE}/rag/v1/query", json={}, status=200)
         c.rag.query("q")
@@ -53,6 +62,7 @@ class TestQuery:
 
     @responses.activate
     def test_top_k_included_when_supplied(self):
+        """top_k is included in the request body when passed."""
         c = _client()
         responses.add(responses.POST, f"{BASE}/rag/v1/query", json={}, status=200)
         c.rag.query("q", top_k=10)
@@ -61,6 +71,7 @@ class TestQuery:
 
     @responses.activate
     def test_all_params_forwarded(self):
+        """study, top_k, mode and hybrid_search are all forwarded exactly as given."""
         c = _client()
         responses.add(responses.POST, f"{BASE}/rag/v1/query", json={}, status=200)
         c.rag.query("q", study="my-study", top_k=3, mode="pmids_only", hybrid_search=True)
@@ -72,6 +83,7 @@ class TestQuery:
 
     @responses.activate
     def test_uses_gateway_rag_prefix(self):
+        """query() posts to the gateway's /rag/v1/query path."""
         c = _client()
         responses.add(responses.POST, f"{BASE}/rag/v1/query", json={}, status=200)
         c.rag.query("q")
@@ -79,6 +91,7 @@ class TestQuery:
 
     @responses.activate
     def test_sends_bearer_token(self):
+        """query() sends the client's access token as a Bearer Authorization header."""
         c = _client()
         responses.add(responses.POST, f"{BASE}/rag/v1/query", json={}, status=200)
         c.rag.query("q")
@@ -86,6 +99,7 @@ class TestQuery:
 
     @responses.activate
     def test_missing_dataset_read_permission_raises_permission_denied(self):
+        """A 403 response raises PermissionDeniedError with status_code 403."""
         c = _client()
         responses.add(
             responses.POST, f"{BASE}/rag/v1/query",
@@ -99,6 +113,7 @@ class TestQuery:
 
     @responses.activate
     def test_invalid_token_raises_authentication_error(self):
+        """A 401 response raises AuthenticationError."""
         c = _client()
         responses.add(
             responses.POST, f"{BASE}/rag/v1/query",
@@ -112,8 +127,10 @@ class TestQuery:
 
 
 class TestKgStats:
+    """RAGClient.kg_stats() calls GET /rag/v1/kg/stats and returns its response."""
     @responses.activate
     def test_calls_expected_endpoint(self):
+        """kg_stats() returns the mocked node count."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/rag/v1/kg/stats",
@@ -124,8 +141,11 @@ class TestKgStats:
 
 
 class TestKgEntity:
+    """RAGClient.kg_entity() calls GET /rag/v1/kg/entity with name and an optional type
+    filter."""
     @responses.activate
     def test_name_only(self):
+        """kg_entity(name) sends only the name query parameter."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/rag/v1/kg/entity",
@@ -136,6 +156,7 @@ class TestKgEntity:
 
     @responses.activate
     def test_name_and_type(self):
+        """kg_entity(name, type=...) sends both name and type query parameters."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/rag/v1/kg/entity",
@@ -148,8 +169,12 @@ class TestKgEntity:
 
 
 class TestKgDrugDisease:
+    """RAGClient.kg_drug_disease() calls GET /rag/v1/kg/drug-disease with the disease
+    query parameter."""
     @responses.activate
     def test_calls_expected_endpoint(self):
+        """kg_drug_disease(disease) sends the disease query parameter and returns the
+        matched drugs."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/rag/v1/kg/drug-disease",

@@ -4,6 +4,9 @@ tests/test_auth_session.py
 Unit tests for omnibioai/auth/session.py::AuthenticatedSession -- token
 refresh on 401 (success and failure paths), the single-retry-only
 guarantee, and X-Trace-Id propagation.
+
+Developer:
+    Manish Kumar <manish@omnibioai.org>
 """
 from __future__ import annotations
 
@@ -20,13 +23,19 @@ TARGET_URL = "https://gateway.omnibioai.example/rag/v1/query"
 
 
 def _session(refresh_token="refresh-1"):
+    """An AuthenticatedSession with a fresh TokenPair and the module's AUTH_URL,
+    defaulting to a real refresh token."""
     tokens = TokenPair(access_token="access-1", refresh_token=refresh_token)
     return AuthenticatedSession(tokens=tokens, auth_url=AUTH_URL, timeout=5)
 
 
 class TestAuthHeaderInjection:
+    """Every request carries the session's current access token as a Bearer
+    Authorization header."""
     @responses.activate
     def test_authorization_header_uses_current_access_token(self):
+        """A request's Authorization header is 'Bearer <access token>' for the session's
+        current token."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"ok": True}, status=200)
         s.request("GET", TARGET_URL)
@@ -34,8 +43,12 @@ class TestAuthHeaderInjection:
 
 
 class TestTraceIdPropagation:
+    """X-Trace-Id is generated when the caller doesn't supply one, used verbatim when
+    they do, and unique across separate calls by default."""
     @responses.activate
     def test_trace_id_generated_when_not_supplied(self):
+        """With no trace_id argument, a non-empty X-Trace-Id header is sent and recorded
+        as last_trace_id."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"ok": True}, status=200)
         s.request("GET", TARGET_URL)
@@ -45,6 +58,8 @@ class TestTraceIdPropagation:
 
     @responses.activate
     def test_trace_id_caller_supplied_is_used_verbatim(self):
+        """A caller-supplied trace_id is sent as X-Trace-Id verbatim and recorded as
+        last_trace_id."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"ok": True}, status=200)
         s.request("GET", TARGET_URL, trace_id="my-trace-id")
@@ -53,6 +68,8 @@ class TestTraceIdPropagation:
 
     @responses.activate
     def test_trace_id_unique_across_calls_by_default(self):
+        """Two calls with no explicit trace_id get different auto-generated X-Trace-Id
+        values."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"ok": True}, status=200)
         responses.add(responses.GET, TARGET_URL, json={"ok": True}, status=200)
@@ -64,8 +81,13 @@ class TestTraceIdPropagation:
 
 
 class TestRefreshOnUnauthorized:
+    """AuthenticatedSession's 401 handling: refreshing tokens and retrying once on
+    success, never retrying a second time, and raising AuthenticationError on every
+    refresh failure mode."""
     @responses.activate
     def test_401_triggers_refresh_and_retries_once(self):
+        """A 401 triggers exactly one refresh call and one retry with the new access
+        token, for a total of 3 HTTP calls, and returns the retried 200 response."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"detail": "expired"}, status=401)
         responses.add(
@@ -106,6 +128,8 @@ class TestRefreshOnUnauthorized:
 
     @responses.activate
     def test_no_refresh_token_skips_refresh_entirely(self):
+        """With no refresh token held, a 401 is returned as-is with no refresh attempt
+        at all (1 HTTP call)."""
         s = _session(refresh_token=None)
         responses.add(responses.GET, TARGET_URL, json={"detail": "expired"}, status=401)
 
@@ -116,6 +140,7 @@ class TestRefreshOnUnauthorized:
 
     @responses.activate
     def test_refresh_response_missing_access_token_raises(self):
+        """A refresh response with no access_token field raises AuthenticationError."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"detail": "expired"}, status=401)
         responses.add(responses.POST, f"{AUTH_URL}/auth/refresh", json={}, status=200)
@@ -140,6 +165,7 @@ class TestRefreshOnUnauthorized:
 
     @responses.activate
     def test_refresh_network_error_raises_authentication_error(self):
+        """A connection error during the refresh call raises AuthenticationError."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"detail": "expired"}, status=401)
         responses.add(
@@ -152,6 +178,7 @@ class TestRefreshOnUnauthorized:
 
     @responses.activate
     def test_refresh_with_malformed_json_response_raises(self):
+        """A non-JSON refresh response raises AuthenticationError."""
         s = _session()
         responses.add(responses.GET, TARGET_URL, json={"detail": "expired"}, status=401)
         responses.add(
