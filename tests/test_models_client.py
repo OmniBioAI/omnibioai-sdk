@@ -6,6 +6,9 @@ request-shape correctness against omnibioai-model-registry's actual
 (task-scoped) endpoint contract, and confirms the access token is always
 sent even though Phase 1 discovery found several of these read endpoints
 enforce no IAM permission today.
+
+Developer:
+    Manish Kumar <manish@omnibioai.org>
 """
 from __future__ import annotations
 
@@ -17,12 +20,17 @@ BASE = "https://gateway.example.com"
 
 
 def _client():
+    """An OmniBioAI client pointed at the module's mock gateway BASE."""
     return OmniBioAI(access_token="tok", base_url=BASE)
 
 
 class TestGet:
+    """ModelsClient.get() calls GET /model-registry/v1/show with task, ref and verify
+    query parameters."""
     @responses.activate
     def test_calls_show_endpoint_with_task_and_ref(self):
+        """get() sends task, ref and verify=False (the default) as query parameters and
+        returns the show response's meta."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/model-registry/v1/show",
@@ -39,6 +47,7 @@ class TestGet:
 
     @responses.activate
     def test_verify_true_forwarded(self):
+        """get(..., verify=True) sends verify=True in the query string."""
         c = _client()
         responses.add(responses.GET, f"{BASE}/model-registry/v1/show", json={}, status=200)
         c.models.get("celltype_sc", "esm2", verify=True)
@@ -56,8 +65,12 @@ class TestGet:
 
 
 class TestResolve:
+    """ModelsClient.resolve() calls GET /model-registry/v1/resolve with task, ref and a
+    default verify=True."""
     @responses.activate
     def test_calls_resolve_endpoint(self):
+        """resolve() sends task and ref as query parameters and returns the resolved
+        path."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/model-registry/v1/resolve",
@@ -71,6 +84,7 @@ class TestResolve:
 
     @responses.activate
     def test_verify_defaults_true(self):
+        """resolve() defaults to verify=True in the query string when not given."""
         c = _client()
         responses.add(responses.GET, f"{BASE}/model-registry/v1/resolve", json={}, status=200)
         c.models.resolve("celltype_sc", "esm2")
@@ -78,8 +92,12 @@ class TestResolve:
 
 
 class TestList:
+    """ModelsClient.list() calls GET /model-registry/v1/models with only the filters the
+    caller actually supplied."""
     @responses.activate
     def test_no_filters(self):
+        """list() with no arguments sends the bare /model-registry/v1/models URL with no
+        query string."""
         c = _client()
         responses.add(
             responses.GET, f"{BASE}/model-registry/v1/models",
@@ -90,6 +108,8 @@ class TestList:
 
     @responses.activate
     def test_task_filter_only(self):
+        """list(task=...) sends only the task filter, omitting model_name and
+        metric_gte."""
         c = _client()
         responses.add(responses.GET, f"{BASE}/model-registry/v1/models", json={"models": []}, status=200)
         c.models.list(task="celltype_sc")
@@ -100,6 +120,8 @@ class TestList:
 
     @responses.activate
     def test_all_filters(self):
+        """list() with task, model_name and metric_gte sends all three as query
+        parameters."""
         c = _client()
         responses.add(responses.GET, f"{BASE}/model-registry/v1/models", json={"models": []}, status=200)
         c.models.list(task="celltype_sc", model_name="esm2", metric_gte="accuracy:0.9")
