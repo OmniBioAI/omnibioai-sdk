@@ -67,7 +67,9 @@ class BaseServiceClient:
         if response.status_code == 404:
             raise ResourceNotFoundError(message, status_code=404, response_body=body, trace_id=trace_id)
         if response.status_code >= 500:
-            raise ServiceUnavailableError(message, status_code=response.status_code, response_body=body, trace_id=trace_id)
+            raise ServiceUnavailableError(
+                message, status_code=response.status_code, response_body=body, trace_id=trace_id
+            )
         if response.status_code >= 400:
             raise ValidationError(message, status_code=response.status_code, response_body=body, trace_id=trace_id)
 
