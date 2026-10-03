@@ -106,6 +106,38 @@ print(run)
 > Never point the SDK directly at individual services (auth-service,
 > workbench etc.) in production.
 
+### Literature AI with an API key
+
+The public, billable Literature AI API (`/v1/literature` on the gateway)
+accepts an `omni_sk_` API key in place of a login token:
+
+```python
+from omnibioai import OmniBioAI
+
+client = OmniBioAI(api_key="omni_sk_...", base_url="https://<gateway>")
+# or set OMNIBIOAI_API_KEY and call OmniBioAI(base_url=...)
+
+answer = client.literature.ask("Which genes drive hypereosinophilic syndrome?", top_k=8)
+studies = client.literature.studies()   # free
+```
+
+Each `ask()` sends an `Idempotency-Key`; pass your own
+`idempotency_key=` when retrying a call whose result you did not see, and
+the gateway returns the stored answer without billing it again. Over the
+per-key rate limit you get `RateLimitError` (with `retry_after` seconds);
+once your organization's included answers run out, `QuotaExceededError`.
+
+### MCP server (Claude, ChatGPT and other MCP clients)
+
+```bash
+pip install "omnibioai-sdk[mcp]"
+OMNIBIOAI_API_KEY=omni_sk_... OMNIBIOAI_BASE_URL=https://<gateway> omnibioai-mcp
+```
+
+Tools: `answer_with_citations`, `find_pmids` and `list_studies` (free). For
+a desktop MCP client, register the `omnibioai-mcp` command with those two
+environment variables. Answer tools are billed like `literature.ask()`.
+
 ### Getting a token
 
 Obtain the access/refresh token pair through the OmniBioAI Auth login or SSO
@@ -215,6 +247,8 @@ c = OmniClient()
 from omnibioai.exceptions import (
     AuthenticationError,
     PermissionDeniedError,
+    QuotaExceededError,   # 402: /v1 API, included usage used up
+    RateLimitError,       # 429: /v1 API, .retry_after seconds
     ServiceUnavailableError,
 )
 

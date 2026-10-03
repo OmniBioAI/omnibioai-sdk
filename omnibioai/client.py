@@ -1,10 +1,12 @@
 """omnibioai/client.py"""
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from .auth.session import AuthenticatedSession
 from .auth.tokens import TokenPair
+from .literature.client import LiteratureClient
 from .models.client import ModelsClient
 from .rag.client import RAGClient
 from .tes.client import TESClient
@@ -51,13 +53,29 @@ class OmniBioAI:
 
     def __init__(
         self,
-        access_token: str,
+        access_token: Optional[str] = None,
         refresh_token: Optional[str] = None,
         base_url: str = DEFAULT_BASE_URL,
         auth_url: str = DEFAULT_AUTH_URL,
         workflows_url: Optional[str] = None,
         timeout: float = 60,
+        *,
+        api_key: Optional[str] = None,
     ) -> None:
+        # An omni_sk_ API key is sent as the bearer token exactly like an
+        # access token; the gateway recognises it. Keys never expire into a
+        # refresh, so no refresh_token applies. Falls back to the
+        # OMNIBIOAI_API_KEY environment variable when neither is given.
+        if access_token and api_key:
+            raise ValueError("Pass either access_token or api_key, not both")
+        if api_key is None and access_token is None:
+            api_key = os.environ.get("OMNIBIOAI_API_KEY")
+        if api_key is not None:
+            if refresh_token:
+                raise ValueError("refresh_token does not apply to an API key")
+            access_token = api_key
+        if not access_token:
+            raise ValueError("An access_token or api_key (or OMNIBIOAI_API_KEY) is required")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.tokens = TokenPair(access_token=access_token, refresh_token=refresh_token)
@@ -65,6 +83,8 @@ class OmniBioAI:
             tokens=self.tokens, auth_url=auth_url, timeout=timeout,
         )
         self.rag = RAGClient(base_url=f"{self.base_url}/rag", session=self.session)
+        # Public, billable /v1 API -- see LiteratureClient's docstring.
+        self.literature = LiteratureClient(base_url=f"{self.base_url}/v1/literature", session=self.session)
         self.models = ModelsClient(base_url=f"{self.base_url}/model-registry", session=self.session)
         self.tes = TESClient(base_url=f"{self.base_url}/tes", session=self.session)
         # workflows_url is a SEPARATE override from base_url, unlike

@@ -10,6 +10,8 @@ from .exceptions import (
     AuthenticationError,
     GatewayError,
     PermissionDeniedError,
+    QuotaExceededError,
+    RateLimitError,
     ResourceNotFoundError,
     ServiceUnavailableError,
     ValidationError,
@@ -64,6 +66,16 @@ class BaseServiceClient:
             raise AuthenticationError(message, status_code=401, response_body=body, trace_id=trace_id)
         if response.status_code == 403:
             raise PermissionDeniedError(message, status_code=403, response_body=body, trace_id=trace_id)
+        if response.status_code == 402:
+            raise QuotaExceededError(message, status_code=402, response_body=body, trace_id=trace_id)
+        if response.status_code == 429:
+            raise RateLimitError(
+                message,
+                retry_after=_retry_after(response),
+                status_code=429,
+                response_body=body,
+                trace_id=trace_id,
+            )
         if response.status_code == 404:
             raise ResourceNotFoundError(message, status_code=404, response_body=body, trace_id=trace_id)
         if response.status_code >= 500:
@@ -84,12 +96,20 @@ def _safe_json(response: requests.Response) -> Any:
         return None
 
 
+def _retry_after(response: requests.Response) -> Optional[int]:
+    try:
+        return int(response.headers.get("Retry-After", ""))
+    except ValueError:
+        return None
+
+
 def _extract_message(body: Any) -> Optional[str]:
     """Normalizes the ecosystem's several observed error-body shapes into
     one human-readable message string:
       - API Gateway:         {"error": "...", "reason": "..."}
       - FastAPI default:      {"detail": "..."}       (RAG, control-center, TES, most of Model Registry)
       - Model Registry (DB):  {"detail": {"ok": false, "error": "..."}}
+      - Public /v1 API:       {"error": {"type": "...", "message": "...", "request_id": "..."}}
     See the Phase 1 findings report's Cross-Service Consistency section
     for the full survey this is built from. Returns None (falls back to
     response.reason at the call site) if the body doesn't match any
@@ -104,6 +124,8 @@ def _extract_message(body: Any) -> Optional[str]:
         if nested:
             return str(nested)
     error = body.get("error")
+    if isinstance(error, dict):
+        return str(error.get("message") or error.get("type") or error)
     if error:
         reason = body.get("reason")
         return f"{error}: {reason}" if reason else str(error)

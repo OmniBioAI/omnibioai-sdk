@@ -10,9 +10,10 @@ it -- see omnibioai/legacy.py.
 """
 from .client import OmniBioAI
 from .legacy import OmniClient
+from .literature import LiteratureClient
 from .models import ModelsClient
 from .rag import RAGClient
 from .tes import TESClient
 from .workflows import WorkflowsClient
 
-__all__ = ["OmniBioAI", "OmniClient", "RAGClient", "ModelsClient", "TESClient", "WorkflowsClient"]
+__all__ = ["OmniBioAI", "OmniClient", "LiteratureClient", "RAGClient", "ModelsClient", "TESClient", "WorkflowsClient"]

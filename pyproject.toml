@@ -25,7 +25,13 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+# MCP server (omnibioai-mcp): Literature AI as tools for Claude, ChatGPT and
+# other MCP clients. Optional so the core SDK stays requests-only.
+mcp = [
+  "mcp>=2,<3"
+]
 dev = [
+  "mcp>=2,<3",
   "pytest>=8",
   "pytest-cov>=5.0",
   "responses>=0.25",
@@ -33,6 +39,9 @@ dev = [
   "twine>=5.1",
   "ruff>=0.6"
 ]
+
+[project.scripts]
+omnibioai-mcp = "omnibioai.mcp_server:main"
 
 [project.urls]
 Homepage = "https://github.com/man4ish/omnibioai_sdk"
