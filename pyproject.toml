@@ -21,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "License :: OSI Approved :: Apache Software License",
-  "Operating System :: OS Infrastructure Independent"
+  "Operating System :: OS Independent"
 ]
 
 [project.optional-dependencies]
@@ -30,7 +30,8 @@ dev = [
   "pytest-cov>=5.0",
   "responses>=0.25",
   "build>=1.2",
-  "twine>=5.1"
+  "twine>=5.1",
+  "ruff>=0.6"
 ]
 
 [project.urls]
@@ -45,6 +46,16 @@ Issues = "https://github.com/man4ish/omnibioai_sdk/issues"
 # unchanged for existing users, while new code imports `from omnibioai
 # import OmniBioAI`.
 packages = ["omnibioai", "omnibioai_sdk"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# pyflakes + pycodestyle errors. Formatting itself is black/isort's job
+# (see CONTRIBUTING.md); the explicit selection keeps CI stable when a new
+# ruff release changes its default rule set.
+select = ["E", "F"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
