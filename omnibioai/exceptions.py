@@ -80,3 +80,20 @@ class GatewayError(OmniBioAIError):
     distinguishing it from ServiceUnavailableError/ValidationError lets a
     caller tell "the gateway itself doesn't know this route" apart from
     "the target service rejected the request"."""
+
+
+class QuotaExceededError(ValidationError):
+    """402 from the public /v1 API: the organization has used its included
+    units (or prepaid credit). Add a payment method or upgrade the plan.
+    A subclass of ValidationError so existing `except ValidationError`
+    handlers keep catching it."""
+
+
+class RateLimitError(ValidationError):
+    """429 from the public /v1 API: too many requests for this API key in
+    the current one-minute window. `retry_after` is the number of seconds
+    the gateway said to wait (from Retry-After), or None if it sent none."""
+
+    def __init__(self, message: str, *, retry_after: Optional[int] = None, **kwargs: Any) -> None:
+        super().__init__(message, **kwargs)
+        self.retry_after = retry_after
