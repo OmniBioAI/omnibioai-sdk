@@ -151,9 +151,7 @@ class TestStatusCodeMapping:
 
 
 class TestGatewayUnknownServiceCase:
-    """The API Gateway's catch-all proxy returns HTTP 200 with
-    {"error": "unknown service"} for an unresolvable service segment --
-    not a 404. Must be raised as GatewayError, not returned as success."""
+    """Legacy 200 and current 404 contracts map to GatewayError."""
 
     def test_200_with_only_error_key_raises_gateway_error(self):
         """A 200 response whose body is exactly {"error": "unknown service"} raises
@@ -178,6 +176,18 @@ class TestGatewayUnknownServiceCase:
         c = _client()
         body = {"ok": True, "data": {"x": 1}}
         assert c._parse(_response(200, body)) == body
+
+    def test_404_unknown_service_preserves_gateway_error_semantics(self):
+        c = _client()
+        with pytest.raises(GatewayError) as ctx:
+            c._parse(_response(404, {"error": "unknown service"}))
+        assert "unknown service" in str(ctx.value)
+        assert ctx.value.status_code == 404
+
+    def test_other_404_remains_resource_not_found(self):
+        c = _client()
+        with pytest.raises(ResourceNotFoundError):
+            c._parse(_response(404, {"error": "artifact not found"}))
 
 
 class TestExtractMessage:

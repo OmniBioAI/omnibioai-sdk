@@ -72,14 +72,12 @@ class ServiceUnavailableError(OmniBioAIError):
 
 
 class GatewayError(OmniBioAIError):
-    """The API Gateway's specific 200-status-but-actually-an-error
-    convention: an unresolvable {service} path segment in its catch-all
-    proxy route responds HTTP 200 with body {"error": "unknown service"}
-    -- a real, observed inconsistency (see Phase 1 findings), not a
-    hypothetical one. status_code is always 200 for this exception;
-    distinguishing it from ServiceUnavailableError/ValidationError lets a
-    caller tell "the gateway itself doesn't know this route" apart from
-    "the target service rejected the request"."""
+    """The API Gateway does not recognize a service path.
+
+    Current Gateways return 404 with `{"error": "unknown service"}`.
+    Older deployments returned the same body with HTTP 200. Both map here so
+    callers retain one semantic exception while deployments are upgraded.
+    """
 
 
 class QuotaExceededError(ValidationError):
