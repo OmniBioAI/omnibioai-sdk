@@ -42,6 +42,20 @@ class BaseServiceClient:
         body = _safe_json(response)
         trace_id = self._session.last_trace_id
 
+        # Current Gateways correctly return 404 for an unknown service.
+        # Older deployments returned this exact body with HTTP 200. Preserve
+        # one semantic exception while a deployment is upgraded.
+        if (
+            response.status_code in {200, 404}
+            and body == {"error": "unknown service"}
+        ):
+            raise GatewayError(
+                "unknown service",
+                status_code=response.status_code,
+                response_body=body,
+                trace_id=trace_id,
+            )
+
         if response.status_code == 200:
             # API Gateway's specific unknown-service convention: HTTP 200
             # with a body that is *only* {"error": "..."} (see
