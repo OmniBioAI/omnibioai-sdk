@@ -45,6 +45,8 @@ The SDK is intentionally **thin and explicit** — it does not hide API behavior
 
 ---
 
+![OmniBioAI SDK Architecture](docs/architecture/omnibioai-sdk-architecture.png)
+
 ## Features
 
 * Unified client (`OmniBioAI`) with shared authentication and session state
